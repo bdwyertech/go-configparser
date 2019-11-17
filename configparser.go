@@ -42,8 +42,8 @@ type Config map[string]*Section
 // ConfigParser ties together a Config and default values for use in
 // interpolated configuration values.
 type ConfigParser struct {
-	config   Config
-	defaults *Section
+	Config   Config
+	Defaults *Section
 }
 
 // Keys returns a sorted slice of keys
@@ -69,8 +69,8 @@ func getNoOptionError(section, option string) error {
 // New creates a new ConfigParser.
 func New() *ConfigParser {
 	return &ConfigParser{
-		config:   make(Config),
-		defaults: newSection("default"),
+		Config:   make(Config),
+		Defaults: NewSection(defaultSectionName),
 	}
 }
 
@@ -78,11 +78,11 @@ func New() *ConfigParser {
 // Dict.
 func NewWithDefaults(defaults Dict) *ConfigParser {
 	p := ConfigParser{
-		config:   make(Config),
-		defaults: newSection("default"),
+		Config:   make(Config),
+		Defaults: NewSection(defaultSectionName),
 	}
 	for key, value := range defaults {
-		p.defaults.Add(key, value)
+		p.Defaults.Add(key, value)
 	}
 	return &p
 }
@@ -125,10 +125,10 @@ func parseFile(file *os.File) (*ConfigParser, error) {
 		if match := sectionHeader.FindStringSubmatch(line); len(match) > 0 {
 			section := match[1]
 			if section == defaultSectionName {
-				curSect = p.defaults
-			} else if _, present := p.config[section]; !present {
-				curSect = newSection(section)
-				p.config[section] = curSect
+				curSect = p.Defaults
+			} else if _, present := p.Config[section]; !present {
+				curSect = NewSection(section)
+				p.Config[section] = curSect
 			}
 		} else if match = keyValue.FindStringSubmatch(line); len(match) > 0 {
 			if curSect == nil {
@@ -179,15 +179,15 @@ func (p *ConfigParser) SaveWithDelimiter(filename, delimiter string) error {
 		return err
 	}
 
-	if len(p.defaults.Options()) > 0 {
-		err = writeSection(f, delimiter, p.defaults)
+	if len(p.Defaults.Options()) > 0 {
+		err = writeSection(f, delimiter, p.Defaults)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, s := range p.Sections() {
-		err = writeSection(f, delimiter, p.config[s])
+		err = writeSection(f, delimiter, p.Config[s])
 		if err != nil {
 			return err
 		}

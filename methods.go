@@ -13,13 +13,13 @@ func (p *ConfigParser) isDefaultSection(section string) bool {
 
 // Defaults returns the items in the map used for default values.
 func (p *ConfigParser) Defaults() Dict {
-	return p.defaults.Items()
+	return p.Defaults.Items()
 }
 
 // Sections returns a list of section names, excluding [DEFAULT].
 func (p *ConfigParser) Sections() []string {
 	sections := make([]string, 0)
-	for section := range p.config {
+	for section := range p.Config {
 		sections = append(sections, section)
 	}
 	sort.Strings(sections)
@@ -39,7 +39,7 @@ func (p *ConfigParser) AddSection(section string) error {
 	} else if p.HasSection(section) {
 		return fmt.Errorf("Section '%s' already exists", section)
 	}
-	p.config[section] = newSection(section)
+	p.Config[section] = NewSection(section)
 	return nil
 }
 
@@ -48,7 +48,7 @@ func (p *ConfigParser) AddSection(section string) error {
 //
 // The DEFAULT section is not acknowledged.
 func (p *ConfigParser) HasSection(section string) bool {
-	_, present := p.config[section]
+	_, present := p.Config[section]
 	return present
 }
 
@@ -60,10 +60,10 @@ func (p *ConfigParser) Options(section string) ([]string, error) {
 		return nil, getNoSectionError(section)
 	}
 	seenOptions := make(map[string]bool)
-	for _, option := range p.config[section].Options() {
+	for _, option := range p.Config[section].Options() {
 		seenOptions[option] = true
 	}
-	for _, option := range p.defaults.Options() {
+	for _, option := range p.Defaults.Options() {
 		seenOptions[option] = true
 	}
 	options := make([]string, 0)
@@ -84,14 +84,14 @@ func (p *ConfigParser) Get(section, option string) (string, error) {
 		if !p.isDefaultSection(section) {
 			return "", getNoSectionError(section)
 		}
-		if value, err := p.defaults.Get(option); err != nil {
+		if value, err := p.Defaults.Get(option); err != nil {
 			return "", getNoOptionError(section, option)
 		} else {
 			return value, nil
 		}
-	} else if value, err := p.config[section].Get(option); err == nil {
+	} else if value, err := p.Config[section].Get(option); err == nil {
 		return value, nil
-	} else if value, err := p.defaults.Get(option); err == nil {
+	} else if value, err := p.Defaults.Get(option); err == nil {
 		return value, nil
 	}
 	return "", getNoOptionError(section, option)
@@ -108,10 +108,10 @@ func (p *ConfigParser) ItemsWithDefaults(section string) (Dict, error) {
 	}
 	s := make(Dict)
 
-	for k, v := range p.defaults.Items() {
+	for k, v := range p.Defaults.Items() {
 		s[k] = v
 	}
-	for k, v := range p.config[section].Items() {
+	for k, v := range p.Config[section].Items() {
 		s[k] = v
 	}
 	return s, nil
@@ -125,7 +125,7 @@ func (p *ConfigParser) Items(section string) (Dict, error) {
 	if !p.HasSection(section) {
 		return nil, getNoSectionError(section)
 	}
-	return p.config[section].Items(), nil
+	return p.Config[section].Items(), nil
 }
 
 // Set puts the given option into the named section.
@@ -135,11 +135,11 @@ func (p *ConfigParser) Set(section, option, value string) error {
 	var setSection *Section
 
 	if p.isDefaultSection(section) {
-		setSection = p.defaults
-	} else if _, present := p.config[section]; !present {
+		setSection = p.Defaults
+	} else if _, present := p.Config[section]; !present {
 		return getNoSectionError(section)
 	} else {
-		setSection = p.config[section]
+		setSection = p.Config[section]
 	}
 	setSection.Add(option, value)
 	return nil
@@ -185,18 +185,18 @@ func (p *ConfigParser) RemoveSection(section string) error {
 	if !p.HasSection(section) {
 		return getNoSectionError(section)
 	}
-	delete(p.config, section)
+	delete(p.Config, section)
 	return nil
 }
 
 func (p *ConfigParser) HasOption(section, option string) (bool, error) {
 	var s *Section
 	if p.isDefaultSection(section) {
-		s = p.defaults
-	} else if _, present := p.config[section]; !present {
+		s = p.Defaults
+	} else if _, present := p.Config[section]; !present {
 		return false, getNoSectionError(section)
 	} else {
-		s = p.config[section]
+		s = p.Config[section]
 	}
 
 	_, err := s.Get(option)
@@ -206,11 +206,11 @@ func (p *ConfigParser) HasOption(section, option string) (bool, error) {
 func (p *ConfigParser) RemoveOption(section, option string) error {
 	var s *Section
 	if p.isDefaultSection(section) {
-		s = p.defaults
-	} else if _, present := p.config[section]; !present {
+		s = p.Defaults
+	} else if _, present := p.Config[section]; !present {
 		return getNoSectionError(section)
 	} else {
-		s = p.config[section]
+		s = p.Config[section]
 	}
 	return s.Remove(option)
 }

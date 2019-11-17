@@ -56,7 +56,7 @@ func (s *Section) Remove(key string) error {
 	return nil
 }
 
-func newSection(name string) *Section {
+func NewSection(name string) *Section {
 	return &Section{
 		Name:    name,
 		options: make(Dict),
